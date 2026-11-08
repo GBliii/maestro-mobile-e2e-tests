@@ -1,0 +1,35 @@
+appId: org.wikipedia
+tags:
+  - regression
+---
+# TC-05. Community feed: today's date and the Featured article card (dynamic content)
+# The feed changes every day, so the test computes today's date itself
+# and reads the card title from the screen instead of hard-coding it.
+
+- runFlow: ../subflows/clean-start.yaml
+
+# The feed header shows today's date, e.g. "Today - Nov 08, 2026"
+- runScript: ../scripts/today.js
+- extendedWaitUntil:
+    visible: "Featured article"
+    timeout: 20000
+- assertVisible: ${output.today}
+
+# Read the title of today's featured article.
+# The card has no ids: the title is the first text element below the Share button
+# (index 0 is the card container itself, which has no text).
+- copyTextFrom:
+    below: "Share"
+    index: 1
+- runScript: ../scripts/escape-regex.js
+- evalScript: '${console.log("Featured article today: " + output.featuredTitle)}'
+
+# Open the article from the card
+- tapOn: ${output.featuredTitleRe}
+
+# The article screen is open and the feed is gone
+- extendedWaitUntil:
+    visible:
+      id: ".*page_save"
+    timeout: 15000
+- assertNotVisible: "Featured article"

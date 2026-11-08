@@ -4,7 +4,8 @@ tags:
   - negative
 ---
 # TC-03. Search with no results (negative)
-# A meaningless query -> an empty-state message, the query stays in the field.
+# A meaningless query -> an empty-state message; the Clear button resets the search
+# and the query is kept in Recent searches.
 
 - runFlow: ../subflows/clean-start.yaml
 - runFlow: ../subflows/open-search.yaml
@@ -21,3 +22,17 @@ tags:
 - assertVisible:
     id: ".*search_src_text"
     text: "blahblahchanandolerbong"
+
+# Clear the query with the X button
+- tapOn:
+    id: ".*search_close_btn"
+
+# The field is empty and the empty-state message is gone
+- assertNotVisible:
+    id: ".*search_src_text"
+    text: "blahblahchanandolerbong"
+- assertNotVisible: "No results.*"
+
+# The app keeps the query in Recent searches, even one without results
+- assertVisible: "Recent searches:"
+- assertVisible: "blahblahchanandolerbong"
