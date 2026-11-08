@@ -1,0 +1,25 @@
+appId: org.wikipedia
+tags:
+  - smoke
+---
+# TC-02. Search for an article and open it
+
+- runFlow: ../subflows/clean-start.yaml
+- runFlow: ../subflows/open-search.yaml
+
+- inputText: "Earhart"
+
+# The right article is in the results.
+# Result rows have no ids in this build, so the title text is used.
+- extendedWaitUntil:
+    visible: "Amelia Earhart"
+    timeout: 15000
+
+# Open it
+- tapOn: "Amelia Earhart"
+
+# The article screen is open: its toolbar has the Save button
+- extendedWaitUntil:
+    visible:
+      id: ".*page_save"
+    timeout: 15000

@@ -1,0 +1,9 @@
+# The app under test is downloaded separately (see README)
+*.apk
+
+# Local Maestro artifacts
+maestro-debug/
+*.mp4
+
+# macOS
+.DS_Store

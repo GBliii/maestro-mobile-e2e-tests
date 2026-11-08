@@ -1,0 +1,23 @@
+appId: org.wikipedia
+tags:
+  - regression
+  - negative
+---
+# TC-03. Search with no results (negative)
+# A meaningless query -> an empty-state message, the query stays in the field.
+
+- runFlow: ../subflows/clean-start.yaml
+- runFlow: ../subflows/open-search.yaml
+
+- inputText: "blahblahchanandolerbong"
+
+# Wait until the search finishes and the empty-state message appears.
+# Depending on the app version it says "No results" or "No results found".
+- extendedWaitUntil:
+    visible: "No results.*"
+    timeout: 15000
+
+# The query is still in the search field (the app did not reset it)
+- assertVisible:
+    id: ".*search_src_text"
+    text: "blahblahchanandolerbong"

@@ -1,0 +1,35 @@
+appId: org.wikipedia
+tags:
+  - regression
+---
+# TC-04. A saved article stays in Saved after the app restart
+
+- runFlow: ../subflows/clean-start.yaml
+- runFlow: ../subflows/open-search.yaml
+
+# Find and open the article
+- inputText: "Earhart"
+- extendedWaitUntil:
+    visible: "Amelia Earhart"
+    timeout: 15000
+- tapOn: "Amelia Earhart"
+
+# Save it from the article toolbar
+- extendedWaitUntil:
+    visible:
+      id: ".*page_save"
+    timeout: 15000
+- tapOn:
+    id: ".*page_save"
+
+# Restart the app WITHOUT clearing data: the saved article must persist
+- launchApp
+
+# The Saved tab lists all saved articles
+- tapOn:
+    id: ".*nav_tab_reading_lists"
+- assertVisible: "All articles"
+- extendedWaitUntil:
+    visible: "Amelia Earhart"
+    timeout: 15000
+- assertVisible: "American aviation pioneer.*"

@@ -1,0 +1,4 @@
+# Maestro workspace config: which files in this repo are tests.
+# Reusable steps live in subflows/ and are not run on their own.
+flows:
+  - "flows/*"

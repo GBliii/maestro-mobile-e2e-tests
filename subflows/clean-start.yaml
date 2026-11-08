@@ -1,0 +1,29 @@
+appId: org.wikipedia
+---
+# Shared setup for every test:
+# start the app from a clean state and skip onboarding,
+# so tests don't depend on each other and can run in any order.
+- launchApp:
+    clearState: true
+
+# The first onboarding screen
+- extendedWaitUntil:
+    visible: "All the world's knowledge"
+    timeout: 15000
+
+# Intro screens have only a "Forward" arrow; the "Skip" button appears
+# on the topic-personalization step. The number of intro screens can change
+# between app versions, so tap "Forward" until "Skip" shows up (max 5 times).
+- repeat:
+    times: 5
+    while:
+      notVisible: "Skip"
+    commands:
+      - tapOn: "Forward"
+- tapOn: "Skip"
+
+# The main screen is ready: the bottom navigation bar is shown
+- extendedWaitUntil:
+    visible:
+      id: ".*nav_tab_search"
+    timeout: 15000

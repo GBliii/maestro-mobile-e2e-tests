@@ -1,0 +1,40 @@
+appId: org.wikipedia
+tags:
+  - smoke
+---
+# TC-01. Onboarding on the first launch
+# Clean install -> every intro screen is shown in order ->
+# topic personalization can be skipped -> the main screen opens.
+
+- launchApp:
+    clearState: true
+
+# Screen 1: welcome
+- extendedWaitUntil:
+    visible: "All the world's knowledge"
+    timeout: 15000
+- assertVisible: "Learn more about Wikipedia"
+- tapOn: "Forward"
+
+# Screen 2: privacy
+- assertVisible: "Data & Privacy"
+- tapOn: "Forward"
+
+# Screen 3: languages detected on the device
+- assertVisible: "Read in more than 300 languages"
+- assertVisible: "English"
+- tapOn: "Forward"
+
+# Screen 4: topic personalization, can be skipped
+- assertVisible: "Follow your curiosity"
+- assertVisible: "Skip"
+- tapOn: "Skip"
+
+# The main screen is open: bottom navigation with the Home tab selected,
+# onboarding is gone
+- extendedWaitUntil:
+    visible:
+      id: ".*nav_tab_home"
+    timeout: 15000
+- assertVisible: "Home"
+- assertNotVisible: "Follow your curiosity"

@@ -1,0 +1,15 @@
+appId: org.wikipedia
+---
+# Open the Search tab and focus the search field.
+# On the first visit the app may show a promo sheet about the search widget:
+# close it by tapping outside, but only if it appears.
+- tapOn:
+    id: ".*nav_tab_search"
+- runFlow:
+    when:
+      visible: "A Faster way to Search"
+    commands:
+      - tapOn:
+          id: "org.wikipedia:id/touch_outside"
+    label: Close the search-widget promo sheet if shown
+- tapOn: "Search Wikipedia"
