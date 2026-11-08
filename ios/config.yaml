@@ -1,0 +1,4 @@
+# Maestro workspace config for the iOS suite (built-in Contacts app).
+# Run from the repo root:  maestro test ios
+flows:
+  - "flows/*"

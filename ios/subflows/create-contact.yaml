@@ -1,0 +1,23 @@
+appId: com.apple.MobileAddressBook
+---
+# Create a contact with the given name from the contacts list and return to the list.
+# Parameters: FIRST_NAME, LAST_NAME (passed via runFlow env).
+- tapOn: "Add"
+- tapOn:
+    id: "First name"
+- inputText: ${FIRST_NAME}
+- tapOn:
+    id: "Last name"
+- inputText: ${LAST_NAME}
+- tapOn: "Done"
+
+# The new contact's card opens; wait for it, then go back to the list.
+# The window is also labelled "Contacts", but Maestro picks the deepest match,
+# which is the back button.
+- extendedWaitUntil:
+    visible: "${FIRST_NAME} ${LAST_NAME}"
+    timeout: 5000
+- tapOn: "Contacts"
+- extendedWaitUntil:
+    visible: "Search"
+    timeout: 5000

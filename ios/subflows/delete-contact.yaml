@@ -1,0 +1,24 @@
+appId: com.apple.MobileAddressBook
+---
+# Delete the contact with the given name from the contacts list.
+# Parameter: NAME (full name as shown in the list), passed via runFlow env.
+- tapOn: ${NAME}
+- tapOn: "Edit"
+
+# "Delete Contact" is at the bottom of a long form. iOS reports wrong frames for rows
+# that have not been scrolled on screen yet, so scroll with real swipes first.
+- repeat:
+    times: 4
+    commands:
+      - swipe:
+          direction: UP
+          duration: 400
+- tapOn: "Delete Contact"
+
+# Confirmation sheet: only its buttons are accessible while it is shown
+- tapOn: "Delete Contact"
+
+# Back in the list, the contact is gone
+- extendedWaitUntil:
+    notVisible: ${NAME}
+    timeout: 5000

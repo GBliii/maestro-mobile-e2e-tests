@@ -1,0 +1,36 @@
+appId: com.apple.MobileAddressBook
+tags:
+  - smoke
+---
+# TC-iOS-01. Create a contact, see it in the list, delete it
+# Built-in iOS apps cannot be reset with clearState (they cannot be reinstalled),
+# so the test cleans up after itself: every created contact is deleted at the end.
+
+- launchApp
+- extendedWaitUntil:
+    visible: "Search"
+    timeout: 10000
+
+# Precondition: remove the test contact if a failed previous run left it behind
+- runFlow:
+    when:
+      visible: "Regina Phalange"
+    file: ../subflows/delete-contact.yaml
+    env:
+      NAME: Regina Phalange
+
+- runFlow:
+    file: ../subflows/create-contact.yaml
+    env:
+      FIRST_NAME: Regina
+      LAST_NAME: Phalange
+
+# The contact is in the list
+- assertVisible: "Regina Phalange"
+
+- runFlow:
+    file: ../subflows/delete-contact.yaml
+    env:
+      NAME: Regina Phalange
+
+- assertNotVisible: "Regina Phalange"

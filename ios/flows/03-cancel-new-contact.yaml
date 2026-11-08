@@ -1,0 +1,42 @@
+appId: com.apple.MobileAddressBook
+tags:
+  - regression
+  - negative
+---
+# TC-iOS-03. New contact form: Done is disabled until a name is entered,
+# and Cancel discards the contact
+
+- launchApp
+- extendedWaitUntil:
+    visible: "Search"
+    timeout: 10000
+
+- tapOn: "Add"
+
+# Validation: an empty form cannot be saved
+- assertVisible:
+    text: "Done"
+    enabled: false
+
+- tapOn:
+    id: "First name"
+- inputText: "Chauncey"
+
+# A name is enough to enable Done
+- assertVisible:
+    text: "Done"
+    enabled: true
+
+- tapOn:
+    id: "Last name"
+- inputText: "Bing"
+
+# Cancel and confirm discarding
+- tapOn: "Cancel"
+- tapOn: "Discard Changes"
+
+# Nothing was saved
+- extendedWaitUntil:
+    visible: "Search"
+    timeout: 5000
+- assertNotVisible: "Chauncey Bing"

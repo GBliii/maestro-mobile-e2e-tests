@@ -1,0 +1,45 @@
+appId: com.apple.MobileAddressBook
+tags:
+  - regression
+---
+# TC-iOS-02. Search finds an existing contact and shows "No Results" for a missing one
+
+- launchApp
+- extendedWaitUntil:
+    visible: "Search"
+    timeout: 10000
+
+# Precondition: remove the test contact if a failed previous run left it behind
+- runFlow:
+    when:
+      visible: "Ken Adams"
+    file: ../subflows/delete-contact.yaml
+    env:
+      NAME: Ken Adams
+
+# Test data: a contact that must be found
+- runFlow:
+    file: ../subflows/create-contact.yaml
+    env:
+      FIRST_NAME: Ken
+      LAST_NAME: Adams
+
+# Positive: search by last name
+- tapOn: "Search"
+- inputText: "Adams"
+- assertVisible: "Ken Adams"
+
+# Negative: a name that does not exist
+- eraseText
+- inputText: "Dinosaur Guy"
+- assertVisible: 'No Results for "Dinosaur Guy"'
+- assertNotVisible: "Ken Adams"
+
+# Leave search mode
+- tapOn: "Cancel"
+
+# Cleanup
+- runFlow:
+    file: ../subflows/delete-contact.yaml
+    env:
+      NAME: Ken Adams
