@@ -1,0 +1,139 @@
+name: Android E2E
+
+# When this workflow runs:
+#   - on every push to main and on every pull request -> smoke tests (the fast, most important ones)
+#   - manually from the Actions tab ("Run workflow") -> you choose the tags: smoke, regression or all
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: "Which tests to run"
+        required: true
+        default: smoke
+        type: choice
+        options:
+          - smoke
+          - regression
+          - all
+
+# If a new run starts for the same branch while the previous one is still going, the old one is cancelled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# The workflow only reads the repository; it never pushes anything
+permissions:
+  contents: read
+
+env:
+  API_LEVEL: 33            # same Android version the tests were written on (emulator Pixel 6 Pro, API 33)
+  MAESTRO_VERSION: 2.12.0  # same Maestro version as on the dev machine; the installer reads this variable
+  TAGS: ${{ github.event.inputs.tags || 'smoke' }}
+
+jobs:
+  android:
+    name: Wikipedia Android (${{ github.event.inputs.tags || 'smoke' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      # The Android emulator needs hardware acceleration (KVM). On GitHub's Linux runners it must be enabled explicitly.
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Maestro CLI
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Show Maestro version
+        run: maestro --version
+
+      # The app under test: the Wikipedia sample build from Maestro's samples archive (~300 MB).
+      # The extracted APK is cached, so the archive is downloaded only when the cache is empty.
+      - name: Restore the Wikipedia APK from cache
+        id: apk-cache
+        uses: actions/cache@v6
+        with:
+          path: app/wikipedia.apk
+          key: wikipedia-apk-maestro-samples-v1
+
+      - name: Download the Wikipedia APK
+        if: steps.apk-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -fL --retry 3 -o samples.zip https://storage.googleapis.com/mobile.dev/samples/samples.zip
+          unzip -o -q samples.zip -d samples
+          mkdir -p app
+          cp "$(find samples -name 'wikipedia.apk' | head -n 1)" app/wikipedia.apk
+          ls -lh app/wikipedia.apk
+
+      # AVD caching (recommended by the emulator action): the first run creates the virtual device and a boot
+      # snapshot and saves them to the cache; later runs restore them and boot much faster.
+      - name: Restore the AVD from cache
+        id: avd-cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-api-${{ env.API_LEVEL }}-pixel6-v1
+
+      - name: Create the AVD and a boot snapshot
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ env.API_LEVEL }}
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
+
+      - name: Run the Maestro tests on the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ env.API_LEVEL }}
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            adb install -r app/wikipedia.apk
+            if [ "$TAGS" = "all" ]; then
+              maestro test android --format JUNIT --output maestro-report.xml --debug-output maestro-debug
+            else
+              maestro test android --include-tags="$TAGS" --format JUNIT --output maestro-report.xml --debug-output maestro-debug
+            fi
+
+      # Whatever the result, keep the JUnit report and Maestro's debug output (logs, screenshots of failed steps)
+      - name: Upload the test report and Maestro artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: maestro-android-${{ env.TAGS }}-run${{ github.run_number }}
+          path: |
+            maestro-report.xml
+            maestro-debug/
+          if-no-files-found: ignore

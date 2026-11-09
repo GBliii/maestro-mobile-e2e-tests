@@ -16,6 +16,7 @@ Out of scope: contact fields other than the name (phone, email, photo), lists/gr
 | Device | Emulator Pixel 6 Pro, API 33 | Simulator iPhone 12 mini, iOS 16.4 |
 | Tools | Maestro CLI 2.12, Java 17, macOS 13 | Maestro CLI 2.12, Xcode 14.3.1, macOS 13 |
 | Network | Required: content is loaded from wikipedia.org | Not required |
+| CI | GitHub Actions, `ubuntu-latest`, emulator API 33 (`.github/workflows/android-e2e.yml`): smoke on every push, full suite on demand | not yet (needs a macOS runner) |
 
 Why Contacts on iOS: the Wikipedia iOS sample build requires iOS 16.6+, while the newest Xcode available on macOS 13 provides iOS 16.4 simulators. A built-in app needs no install and runs on any simulator.
 
@@ -41,7 +42,7 @@ Why Contacts on iOS: the Wikipedia iOS sample build requires iOS 16.6+, while th
 
 - Android: remove an article from Saved; recent searches; topic personalization ("For you"); app language change; behaviour without internet (`setAirplaneMode`)
 - iOS: edit an existing contact; add a phone number and check the call button becomes enabled; contact lists; Wikipedia iOS once an iOS 17 simulator (Xcode 15) is available
-- Both: a second device size per platform; running the suites in CI
+- Both: a second device size per platform; the iOS suite in CI (a macOS runner with an iOS simulator)
 
 ## Observations
 
@@ -57,3 +58,4 @@ Why Contacts on iOS: the Wikipedia iOS sample build requires iOS 16.6+, while th
 - **Shared state (iOS).** Built-in apps cannot be reset with `clearState`; tests create their own data and delete it. A test interrupted in the middle leaves a contact behind, so TC-I01 and TC-I02 remove leftovers before they start.
 - **Localization.** All text selectors are English; both the emulator and the simulator must run in English.
 - **App builds.** The Android sample build differs from the Google Play version and from the version described in Maestro docs (different onboarding, no "Top read" block); selectors are verified on the sample build only.
+- **CI environment.** The GitHub-hosted emulator has no GPU and the Wikipedia content is loaded live, so runs are slower than locally and depend on wikipedia.org being reachable. Only the `smoke` tag runs on every push; the regression suite (including the date-dependent TC-A05) is started by hand so that a flaky live-data test does not block the pipeline.
