@@ -39,7 +39,8 @@ env:
 jobs:
   android:
     name: Wikipedia Android (${{ github.event.inputs.tags || 'smoke' }})
-    runs-on: ubuntu-latest
+    # Pinned to a specific Ubuntu image: "ubuntu-latest" is moving to a new release and emulator tooling may lag behind
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
 
     steps:
@@ -109,6 +110,17 @@ jobs:
           disable-animations: false
           script: echo "Generated AVD snapshot for caching."
 
+      # "all" means no tag filter; anything else becomes --include-tags=<tag>.
+      # Computed here because the emulator action runs every line of its `script` as a separate shell command,
+      # so an if/else block cannot live there.
+      - name: Choose which tests to run
+        run: |
+          if [ "$TAGS" = "all" ]; then
+            echo "MAESTRO_ARGS=" >> "$GITHUB_ENV"
+          else
+            echo "MAESTRO_ARGS=--include-tags=$TAGS" >> "$GITHUB_ENV"
+          fi
+
       - name: Run the Maestro tests on the emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -119,13 +131,10 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
+          # One command per line: each line is run on its own by the action
           script: |
             adb install -r app/wikipedia.apk
-            if [ "$TAGS" = "all" ]; then
-              maestro test android --format JUNIT --output maestro-report.xml --debug-output maestro-debug
-            else
-              maestro test android --include-tags="$TAGS" --format JUNIT --output maestro-report.xml --debug-output maestro-debug
-            fi
+            maestro test android $MAESTRO_ARGS --format JUNIT --output maestro-report.xml --debug-output maestro-debug
 
       # Whatever the result, keep the JUnit report and Maestro's debug output (logs, screenshots of failed steps)
       - name: Upload the test report and Maestro artifacts
